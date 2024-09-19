@@ -22,6 +22,9 @@ library(scipy.stats)
 library(ggforce)
 library(nlme)
 library(glmmTMB)
+library(usethis)
+library(gitcreds)
+
 
 
 #Reset R's brain
