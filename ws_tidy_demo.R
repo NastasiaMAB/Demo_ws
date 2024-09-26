@@ -3,9 +3,10 @@ library(tidyr)
 library(palmerpenguins)
 library(ggplot2)
 
-penguins_data <- penguins
 
-write.csv(penguin_data, "data/penguins.csv", row.names = FALSE)
+write.csv(penguins, "data/penguins.csv", row.names = FALSE)
+
+penguins <- penguins_data
 
 head(penguins)
 str(penguins)
@@ -53,3 +54,65 @@ penguins_species_total <- penguins_data|>
   summarize(total_penguins = n(),
             total_penguins_biomass = sum(body_mass_g, na.rm = TRUE))
 ungroup()
+
+##### Split-apply-combine #####
+
+penguin_summary <- penguins |>
+  group_by(island, species) |>
+  summarize(total_penguins = n(),
+            total_penguin = sum(body_mass_g)) |>
+  ungroup()
+
+penguin_totals <- penguins |>
+  group_by(island, species) |>
+  summarize(total_penguins = n(),
+            total_penguin = sum(body_mass_g, na.rm = T)) |>
+  ungroup()
+
+penguin_summary <- penguins |>
+  group_by(island, species, sex) |>
+  summarize(across(ends_with("mm"), mean)) |>
+  ungroup()
+
+
+##### Reshaping #####
+
+penguins_site_by_species <- penguin_totals |>
+  select(species, island, total_penguins)
+
+penguins_site_by_species <- penguin_totals |>
+  select(species, island, total_penguins) |>
+  tidyr::pivot_wider(id_cols = island,
+                     names_from = species,
+                     values_from = total_penguins)
+
+penguins_site_by_species <- penguin_totals |>
+  select(species, island, total_penguins) |>
+  tidyr::pivot_wider(
+    id_cols = island,
+    names_from = species,
+    values_from = total_penguins,
+    values_fill =  0
+  )
+
+penguins_back_to_totals <- penguins_site_by_species |>
+  tidyr::pivot_longer(-island, names_to = "Species", values_to = "Abundance")
+
+##### joins + advanced joins #####
+
+island_coordinates <- data.frame(
+  island = c("Biscoe", "Dream", "Torgersen"),
+  latitude = c(-65.433, -64.733, -64.766),
+  longitude = c(-65.5, -64.344, -64.083)
+)
+
+ggplot(island_coordinates, aes(latitude, longitude)) +
+  geom_point() +
+  geom_text(aes(label = island), nudge_x = .07)
+
+penguins_coords <- left_join(penguins, island_coordinates)
+
+ggplot(penguins_coords, aes(longitude, body_mass_g, color = species)) +
+  geom_jitter() +
+  scale_color_viridis_d(option = "mako", begin = .2, end = .8)
+
